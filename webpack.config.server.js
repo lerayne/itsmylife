@@ -42,8 +42,15 @@ module.exports = function (env) {
 
     if (PROD) {
         plugins.push(new UglifyJsPlugin({
-            mangle: true,
-            comments: false
+            uglifyOptions: {
+                mangle: true,
+                ecma: 8,
+                compress:{
+                    drop_console: true,
+                    pure_funcs: ['console.error'],
+                    passes: 5
+                }
+            }
         }))
     }
 
