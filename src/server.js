@@ -7,7 +7,8 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 
-import generateStaticPage from './server/generateStaticPage'
+import {generateStaticPage} from './ssr-bootstrap'
+import getTemplate from './server/getTemplate'
 
 import {domain} from 'config'
 
@@ -22,7 +23,7 @@ app.use(cookieParser())
 // раздаем статику
 app.use('/public', express.static('public'))
 
-app.get('/', generateStaticPage)
+app.get('/', generateStaticPage(getTemplate))
 
 const PORT = process.env.LISTEN || 3001
 
