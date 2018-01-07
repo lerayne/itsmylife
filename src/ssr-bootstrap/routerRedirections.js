@@ -1,15 +1,9 @@
 /**
  * Created by lerayne on 07.01.17.
  */
+"use strict"
 
-import React from 'react'
 import url from 'url'
-import {IndexRoute, Route}  from 'react-router'
-import App from './containers/App'
-import TransactionsPage from './containers/TransactionsPage'
-import CategoriesPage from './containers/CategoriesPage'
-import LoginPage from './containers/LoginPage'
-import StatsPage from './containers/StatsPage'
 
 function getRedirectUrl(pathname, prevLocation = false){
     const urlObject = {
@@ -33,19 +27,20 @@ function getRedirectUrl(pathname, prevLocation = false){
  */
 function redirectionsCheck(globalState, routerState, redirect){
 
-    const {user} = globalState
-    const {routes, location} = routerState
     let redirected = false
+
+    const {routes, location} = routerState
+    const userId = (globalState.user && globalState.user.id) ? globalState.user.id : -1
 
     routes.forEach(route => {
         const component = route.component.WrappedComponent || route.component
 
-        if (component.loginRequired && user.id === -1) {
+        if (component.loginRequired && userId === -1) {
             redirected = true
             redirect(getRedirectUrl('/login', location))
         }
 
-        if (component.anonymousRequired && user.id !== -1) {
+        if (component.anonymousRequired && userId !== -1) {
             redirected = true
             // todo - подумать о том что случится, если будет переход на страницу "login"
             // не при помощи набора в адрессной строке (тогда будет простой редирект), а
@@ -63,7 +58,7 @@ function redirectionsCheck(globalState, routerState, redirect){
  * @param store
  * @returns {Function}
  */
-function onEnter(store){
+function getOnEnterFunc(store){
     return function (nextRouterState, redirect){
         if (!process.env.BROWSER){
             redirectionsCheck(store.getState(), nextRouterState, redirect)
@@ -76,10 +71,10 @@ function onEnter(store){
  * @param store
  * @returns {Function}
  */
-function onChange(store){
+function getOnChangeFunc(store){
     return function(prevRouterState, nextRouterState, redirect){
         if (process.env.BROWSER){
-            // onChange is called under query change, we want to omit this
+            // onChange is called also on url.query change, we want to omit this
             if (prevRouterState.location.pathname !== nextRouterState.location.pathname){
                 redirectionsCheck(store.getState(), nextRouterState, redirect)
             }
@@ -87,11 +82,7 @@ function onChange(store){
     }
 }
 
-export default function RoutesComponent(store) {
-    return <Route component={App} path='/' onEnter={onEnter(store)} onChange={onChange(store)}>
-        <IndexRoute component={TransactionsPage}/>
-        <Route path="categories" component={CategoriesPage}/>
-        <Route path="stats" component={StatsPage}/>
-        <Route path="login" component={LoginPage}/>
-    </Route>
+export {
+    getOnEnterFunc,
+    getOnChangeFunc
 }

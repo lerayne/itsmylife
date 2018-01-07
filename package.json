@@ -14,7 +14,7 @@
     "dev-client-ps": "webpack --env.mode=development --config=webpack.config.client.js",
     "dev-server": "webpack --env.mode=development --env.hot --config=webpack.config.server.js --progress",
     "dev-server-ps": "webpack --env.mode=development --config=webpack.config.server.js",
-    "all-ps": "npm run dev-server-ps && npm run dev-client-ps && DEBUG=express node expenses.js"
+    "all-ps": "npm run dev-server-ps && npm run dev-client-ps && DEBUG=express node itsmylife.js"
   },
   "repository": {
     "type": "git",

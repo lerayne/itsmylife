@@ -2,39 +2,26 @@
  * Created by lerayne on 09.05.17.
  */
 
-import {applyMiddleware, createStore, compose} from 'redux';
+import {applyMiddleware, createStore, compose, combineReducers} from 'redux';
 import thunk from 'redux-thunk';
-import rootReducer from './rootReducer';
 import promiseMiddleware from './promiseMiddleware'
 
-export default function configureStore(initialState = {}) {
+export default function configureStore(initialState = {}, reducers) {
 
     // apply middlewares
-    let enhancer
-    const middlewares = applyMiddleware(thunk, promiseMiddleware)
+    let middlewares = applyMiddleware(thunk, promiseMiddleware)
 
     // apply devtools
-    if (process.env.NODE_ENV === 'development'){
+    if (process.env.NODE_ENV === 'development' && process.env.BROWSER){
 
-        const DevTools = require('../client/components/DevTools/index').default
+        const DevTools = require('./client/DevTools/index').default
 
-        enhancer = compose(
+        middlewares = compose(
             middlewares,
             DevTools.instrument()
         )
-    } else {
-        enhancer = middlewares
     }
 
     // creates store from root reducer, initial state and middlewares
-    const store = createStore(rootReducer, initialState, enhancer)
-
-    if (module.hot) {
-        module.hot.accept('./reducers', () =>
-            //store.replaceReducer(require('./reducers/index').default)
-            store.replaceReducer(require('./rootReducer').default)
-        )
-    }
-
-    return store
+    return createStore(combineReducers(reducers), initialState, middlewares)
 }

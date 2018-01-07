@@ -3,4 +3,4 @@
  */
 "use strict"
 
-export generateStaticPage from './generateStaticPage'
+export createStaticGenerator from './createStaticGenerator'
