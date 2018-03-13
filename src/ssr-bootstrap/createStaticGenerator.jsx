@@ -43,8 +43,8 @@ export default function createStaticGenerator(options){
         route: getRootRoute,
         reducers,
         jwtSecret,
-        authCookieName,
-        loginPagePath
+        authCookieName, //todo - not honored yet
+        loginPagePath //todo - not honored yet
     } = options
 
     /**
@@ -77,7 +77,8 @@ export default function createStaticGenerator(options){
 
         const store = configureStore({}, reducers)
 
-        const {payload: currentUser} = await checkUserAuth(req)
+        // todo - simple: important user info is just stored in the cookie. Maybe change to DB query
+        const {payload: currentUser} = await checkUserAuth(req, jwtSecret)
 
         if (currentUser) {
             store.dispatch({

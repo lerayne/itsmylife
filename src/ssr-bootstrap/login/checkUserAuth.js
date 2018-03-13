@@ -4,13 +4,13 @@
 
 import jwt from 'jsonwebtoken'
 
-export default function checkUserAuth(req){
+export default function checkUserAuth(req, jwtSecret){
     return new Promise((resolve, reject) => {
 
         if (!req.cookies.access_token) {
             resolve(false)
         } else {
-            jwt.verify(req.cookies.access_token, secretKey, (err, decoded) => {
+            jwt.verify(req.cookies.access_token, jwtSecret, (err, decoded) => {
                 if (err) {
                     resolve(false)
                 } else {
