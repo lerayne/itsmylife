@@ -8,7 +8,7 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BundleAnalyzer = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const cssName = 'styles.css';
-const jsName = 'bundle.js';
+const jsName = 'client.js';
 
 module.exports = function (env) {
 

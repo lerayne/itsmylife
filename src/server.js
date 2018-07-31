@@ -21,10 +21,15 @@ const app = express()
 
 // стандартный модуль, для парсинга JSON в запросах
 app.use(bodyParser.json())
+// стандартный модуль для парсинга поля body в POST-запросах. extended:false означает что в
+// возвращаемом объекте value может быть только string или array
 app.use(bodyParser.urlencoded({extended:false}))
+// стандартный модуль для парсинга cookies
 app.use(cookieParser())
 
-// раздаем статику
+// раздаем статику - это объявление значит что сначала сервер смотрит не соответствует ли запрос
+// паттерну GET /public... а потом уже - всем остальным объявленным паттернам. Таким образом статика
+// будет всегда раздаваться, даже если все остальные URL хендлятся одним единственным парсером
 app.use('/public', express.static('public'))
 
 /**
@@ -33,7 +38,7 @@ app.use('/public', express.static('public'))
  * 1) A reducer named "user" which has an id field. This id defaults to -1 if anonymous
  * 2) A route "/login" which leads to a login page
  * 3) "loginRequired" and "anonymousRequired" static props on containers which has to be
- *    redirected from if user is (not) logged in
+ *    redirected from, if user is (not) logged in
  * 4) An "initialize" static function that takes dispatch and location as params and
  *    returns a single promise. This promise should resolve when store is already changed
  * 5) Auth is made through a cookie named "access_token"
@@ -46,16 +51,16 @@ const generateStaticPage = createStaticGenerator({
 })
 
 // main static page renderer
-app.get('/', generateStaticPage)
+app.get('/*', generateStaticPage)
 
 // todo - get to know what is this for and make it work properly
 // todo - not in server definitely!!
-if (module.hot) {
+/*if (module.hot) {
     module.hot.accept('./shared/reducers', () =>
         //store.replaceReducer(require('./reducers/index').default)
         store.replaceReducer(require('./shared/reducers').default)
     )
-}
+}*/
 
 const PORT = process.env.LISTEN || 3001
 

@@ -6,7 +6,8 @@
 import {staticResourcesUrl} from 'config'
 
 const DEV = process.env.NODE_ENV === 'development'
-const assetUrl = DEV ? '//localhost:8050/public/' : staticResourcesUrl
+const HOT = !!process.env.HOT
+const assetUrl = HOT ? '//localhost:8050/public/' : staticResourcesUrl
 
 export default function getTemplate(dynamicHTML, initialState){
     return `
