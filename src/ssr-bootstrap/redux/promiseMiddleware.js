@@ -31,7 +31,8 @@ export default function promiseMiddleware({getState, dispatch}) {
                 newAction.initialPayload = payload
             }
 
-            // Returns a promise after this "then" is done
+            // Returns a promise in which this "then" is done and the next "then" will receive the
+            // result of this
             return promise.then(
                 result => {
                     // "next" is fatser, but "dispatch" is more correct, for example there can be

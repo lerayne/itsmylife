@@ -14,7 +14,7 @@ export default function configureStore(initialState = {}, reducers) {
     // apply devtools
     if (process.env.NODE_ENV === 'development' && process.env.BROWSER){
 
-        const DevTools = require('./client/DevTools/index').default
+        const DevTools = require('../client/DevTools/index').default
 
         middlewares = compose(
             middlewares,

@@ -7,13 +7,13 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 
-import {createStaticGenerator} from './ssr-bootstrap'
+import {createStaticGenerator, createLoginEP} from './ssr-bootstrap'
 
 import getTemplate from './server/getTemplate'
 import reducers from './shared/reducers'
 import getRootRoute from './shared/getRootRoute'
 
-import {secretKey} from 'config'
+import {secretKey, keyExpiresIn, domain} from 'config'
 
 //import {domain} from 'config'
 
@@ -33,6 +33,15 @@ app.use(cookieParser())
 // будет всегда раздаваться, даже если все остальные URL хендлятся одним единственным парсером
 app.use('/public', express.static('public'))
 
+app.post('/login', createLoginEP({
+    jwtSecret: secretKey,
+    keyExpiresIn,
+    domain,
+    getUser: async function(email){
+        /**/
+    }
+}))
+
 /**
  * this creates main html-generator function which abstracts all react-redux isomorphy.
  * Prerequisites:
@@ -48,7 +57,9 @@ const generateStaticPage = createStaticGenerator({
     getTemplate,
     getRootRoute,
     jwtSecret: secretKey,
+    keyExpiresIn,
     reducers,
+    domain,
 })
 
 // main static page renderer

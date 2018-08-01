@@ -4,3 +4,4 @@
 "use strict"
 
 export createStaticGenerator from './createStaticGenerator'
+export createLoginEP from './endpoints/login'

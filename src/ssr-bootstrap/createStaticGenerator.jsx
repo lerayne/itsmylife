@@ -7,13 +7,10 @@ import {match, RouterContext} from 'react-router'
 import {Provider} from 'react-redux'
 import React from 'react'
 import {renderToNodeStream} from 'react-dom/server'
-import {createRouterRedirectFuncs} from './routerRedirections'
-import checkUserAuth from './login/checkUserAuth'
-import grantAccess from './login/grantAccess'
 
-import configureStore from './configureStore'
-import getTemplate from "../server/getTemplate";
-import getRootRoute from "../shared/getRootRoute";
+import {createRouterRedirectFuncs} from './compose/routerRedirections'
+import {createAuthFuncs} from './compose/auth'
+import configureStore from './redux/configureStore'
 
 export default function createStaticGenerator(options){
 
@@ -22,7 +19,8 @@ export default function createStaticGenerator(options){
     const defaultOptions = {
         authCookieName: "access_token",
         loginPagePath: "/login",
-        rootPath: '/',
+        rootPath: "/",
+        keyExpiresIn: "30 days",
 
         setUserState: function(userCookieObject){
             return {
@@ -40,7 +38,8 @@ export default function createStaticGenerator(options){
         'getTemplate',
         'getRootRoute',
         'reducers',
-        'jwtSecret'
+        'jwtSecret',
+        'domain'
     ]
 
     const missingProp = requiredOptions.find(propName => options[propName] === undefined)
@@ -61,19 +60,21 @@ export default function createStaticGenerator(options){
         jwtSecret,
         setUserState,
         isLoggedInFromState,
-        authCookieName, //todo - not honored yet
+        authCookieName,
         loginPagePath,
-        rootPath
+        rootPath,
+        keyExpiresIn,
+        domain,
     } = options
 
     /**
      * return static page as a stream (allows gradual load as the page renders)
      * @param res - express resource
-     * @param initialState
+     * @param getState
      * @param reactNode
      */
-    function streamHTML(res, initialState, reactNode){
-        const [headHTML, tailHTML] = getTemplate('{react-root}', initialState).split('{react-root}')
+    function streamHTML(res, getState, reactNode){
+        const [headHTML, tailHTML] = getTemplate('{react-root}', getState()).split('{react-root}')
 
         res.write(headHTML)
 
@@ -87,11 +88,18 @@ export default function createStaticGenerator(options){
         })
     }
 
-    //get
+    //get functions for handling redirections by react-router
     const {getOnEnterFunc, getOnChangeFunc} = createRouterRedirectFuncs(
         isLoggedInFromState,
         loginPagePath,
         rootPath
+    )
+
+    const {checkUserAuth, grantAccess} = createAuthFuncs(
+        domain,
+        authCookieName,
+        jwtSecret,
+        keyExpiresIn,
     )
 
     /**
@@ -100,14 +108,14 @@ export default function createStaticGenerator(options){
      * @param req - express request
      * @param res - espress response
      */
-    async function generateStaticPage(req, res) {
+    return async function generateStaticPage(req, res) {
 
         //create redux store
         const store = configureStore({}, reducers)
 
         // get current user's authentication cookie status (false | jwt.verify object)
         // Attention! Only the essential user info should be stored in a JWT cookie!
-        const {payload: currentUser} = await checkUserAuth(req, jwtSecret)
+        const {payload: currentUser} = await checkUserAuth(req)
 
         if (currentUser) {
             store.dispatch(setUserState(currentUser))
@@ -125,38 +133,39 @@ export default function createStaticGenerator(options){
             )
         }, async (error, redirectLocation, renderProps) => {
 
-            if (redirectLocation) { // Если необходимо сделать redirect
+            if (redirectLocation) { // Redirect required
                 return res.redirect(302, redirectLocation.pathname + redirectLocation.search)
             }
 
-            if (error) { // Произошла ошибка любого рода
+            if (error) { // Any error occurs
                 return res.status(500).send(error.message)
             }
 
-            if (!renderProps) { // Мы не определили путь, который бы подошел для URL
+            if (!renderProps) { // Router does not recognize path
                 return res.status(404).send('Not found')
             }
 
             // seeks for "initialize" static function that returns a promise
-            const promises = renderProps.routes.reduce((arr, route) => {
+            const promises = []
+
+            renderProps.routes.forEach(route => {
                 const component = route.component.WrappedComponent || route.component
                 if (component.initialize){
-                    return arr.concat([component.initialize(store.dispatch, renderProps.location)])
-                } else return arr
-            }, [])
+                    promises.push(component.initialize(store.dispatch, renderProps.location))
+                }
+            })
 
-            // todo - proper error handling
+            // todo - proper error handling with try-catch
             if (promises.length) {
+                // each promise resolves only after it make all necessary changes to store
                 await Promise.all(promises)
             }
 
-            streamHTML(res, store.getState(),
+            streamHTML(res, store.getState,
                 <Provider store={store}>
                     <RouterContext {...renderProps} />
                 </Provider>
             )
         })
     }
-
-    return generateStaticPage
 }
