@@ -15,6 +15,8 @@ import configureStore from './configureStore'
 
 export default function createStaticGenerator(options){
 
+    /* object configuration */
+
     const defaultOptions = {
         authCookieName: "access_token",
         loginPagePath: "/login",
@@ -49,35 +51,38 @@ export default function createStaticGenerator(options){
 
     /**
      * return static page as a stream (allows gradual load as the page renders)
-     * @param res
+     * @param res - express resource
      * @param initialState
      * @param reactNode
      */
     function streamHTML(res, initialState, reactNode){
-        const html = getTemplate('{react-root}', initialState).split('{react-root}')
+        const [headHTML, tailHTML] = getTemplate('{react-root}', initialState).split('{react-root}')
 
-        res.write(html[0])
+        res.write(headHTML)
 
         const stream = renderToNodeStream(reactNode)
+
         stream.pipe(res, {end: false})
 
         stream.on('end', () => {
-            res.write(html[1])
+            res.write(tailHTML)
             res.end()
         })
     }
 
     /**
-     * this is actually the handler for express'es client request
+     * Actual handler of express get routing
      *
-     * @param req
-     * @param res
+     * @param req - express request
+     * @param res - espress response
      */
     async function generateStaticPage(req, res) {
 
+        //create redux store
         const store = configureStore({}, reducers)
 
-        // todo - simple: important user info is just stored in the cookie. Maybe change to DB query
+        // get current user's authentication cookie status (false | jwt.verify object)
+        // Attention! Only the essential user info should be stored in a JWT cookie!
         const {payload: currentUser} = await checkUserAuth(req, jwtSecret)
 
         if (currentUser) {
@@ -86,10 +91,8 @@ export default function createStaticGenerator(options){
                 payload: currentUser
             })
 
-            // todo - only reauthorize near expiration (performance)
-            // todo - check ip
-
-            // sliding - now only on static page render
+            // reauthorize user
+            // todo - only reauthorize near expiration (performance). Now reauthorizing each time
             await grantAccess(req, res, currentUser)
         }
 
@@ -112,20 +115,18 @@ export default function createStaticGenerator(options){
 
             // seeks for "initialize" static function that returns a promise
             const promises = renderProps.routes.reduce((arr, route) => {
-                const comp = route.component.WrappedComponent || route.component
-                if (comp.initialize){
-                    return arr.concat([comp.initialize(store.dispatch, renderProps.location)])
+                const component = route.component.WrappedComponent || route.component
+                if (component.initialize){
+                    return arr.concat([component.initialize(store.dispatch, renderProps.location)])
                 } else return arr
             }, [])
 
+            // todo - proper error handling
             if (promises.length) {
                 await Promise.all(promises)
             }
 
-            streamHTML(
-                res,
-                store.getState(),
-
+            streamHTML(res, store.getState(),
                 <Provider store={store}>
                     <RouterContext {...renderProps} />
                 </Provider>

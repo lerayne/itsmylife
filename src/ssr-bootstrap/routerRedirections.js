@@ -5,6 +5,13 @@
 
 import url from 'url'
 
+/**
+ * Creates new URL with previous location in query param "next"
+ *
+ * @param pathname: String
+ * @param prevLocation: Object (URL)
+ * @returns String URL
+ */
 function getRedirectUrl(pathname, prevLocation = false){
     const urlObject = {
         pathname: pathname,
@@ -20,16 +27,19 @@ function getRedirectUrl(pathname, prevLocation = false){
 
 /**
  * Check access to route container and redirect if not allowed
+ * Iterates over all components looking for "loginRequired" or "anonymousRequired" static props.
+ * redirects to "/login" or "/" if founds
+ *
  * @param globalState
- * @param routerState
+ * @param nextRouterState
  * @param redirect
  * @returns {boolean}
  */
-function redirectionsCheck(globalState, routerState, redirect){
+function redirectionsCheck(globalState, nextRouterState, redirect){
 
     let redirected = false
 
-    const {routes, location} = routerState
+    const {routes, location} = nextRouterState
     const userId = (globalState.user && globalState.user.id) ? globalState.user.id : -1
 
     routes.forEach(route => {
@@ -50,6 +60,7 @@ function redirectionsCheck(globalState, routerState, redirect){
         }
     })
 
+    // return not used
     return redirected
 }
 

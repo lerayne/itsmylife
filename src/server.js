@@ -8,6 +8,7 @@ import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 
 import {createStaticGenerator} from './ssr-bootstrap'
+
 import getTemplate from './server/getTemplate'
 import reducers from './shared/reducers'
 import getRootRoute from './shared/getRootRoute'

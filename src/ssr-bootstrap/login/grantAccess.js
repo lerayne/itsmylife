@@ -14,12 +14,13 @@ export default async function grantAccess(req, res, insecureUser) {
         // removing password hash
         const {password_hash, ...rest} = insecureUser
 
+        // todo - check ip
         const user = {
             ...rest,
-            ip: '0.0.0.0' // todo - current IP
+            ip: '0.0.0.0' // current IP should be here
         }
 
-        // todo - get domain from env (doesnt work now on prod)
+        // todo - get domain from env (doesn't work now on prod)
         // const host = req.get('host')
         // const hostname = host.split(':')[0]
 
