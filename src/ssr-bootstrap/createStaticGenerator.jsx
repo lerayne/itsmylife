@@ -7,11 +7,13 @@ import {match, RouterContext} from 'react-router'
 import {Provider} from 'react-redux'
 import React from 'react'
 import {renderToNodeStream} from 'react-dom/server'
-import {getOnChangeFunc, getOnEnterFunc} from './routerRedirections'
+import {createRouterRedirectFuncs} from './routerRedirections'
 import checkUserAuth from './login/checkUserAuth'
 import grantAccess from './login/grantAccess'
 
 import configureStore from './configureStore'
+import getTemplate from "../server/getTemplate";
+import getRootRoute from "../shared/getRootRoute";
 
 export default function createStaticGenerator(options){
 
@@ -20,12 +22,24 @@ export default function createStaticGenerator(options){
     const defaultOptions = {
         authCookieName: "access_token",
         loginPagePath: "/login",
+        rootPath: '/',
+
+        setUserState: function(userCookieObject){
+            return {
+                type: 'SET_USER',
+                payload: userCookieObject
+            }
+        },
+
+        isLoggedInFromState: function(state){
+            return state.user.id !== -1
+        }
     }
 
     const requiredOptions = [
-        'template',
+        'getTemplate',
+        'getRootRoute',
         'reducers',
-        'route',
         'jwtSecret'
     ]
 
@@ -41,12 +55,15 @@ export default function createStaticGenerator(options){
     }
 
     const {
-        template: getTemplate,
-        route: getRootRoute,
+        getTemplate,
+        getRootRoute,
         reducers,
         jwtSecret,
+        setUserState,
+        isLoggedInFromState,
         authCookieName, //todo - not honored yet
-        loginPagePath //todo - not honored yet
+        loginPagePath,
+        rootPath
     } = options
 
     /**
@@ -70,6 +87,13 @@ export default function createStaticGenerator(options){
         })
     }
 
+    //get
+    const {getOnEnterFunc, getOnChangeFunc} = createRouterRedirectFuncs(
+        isLoggedInFromState,
+        loginPagePath,
+        rootPath
+    )
+
     /**
      * Actual handler of express get routing
      *
@@ -86,10 +110,7 @@ export default function createStaticGenerator(options){
         const {payload: currentUser} = await checkUserAuth(req, jwtSecret)
 
         if (currentUser) {
-            store.dispatch({
-                type: 'SET_USER',
-                payload: currentUser
-            })
+            store.dispatch(setUserState(currentUser))
 
             // reauthorize user
             // todo - only reauthorize near expiration (performance). Now reauthorizing each time
@@ -97,8 +118,11 @@ export default function createStaticGenerator(options){
         }
 
         match({
-            routes: getRootRoute(getOnEnterFunc(store), getOnChangeFunc(store)),
-            location: req.url
+            location: req.url,
+            routes: getRootRoute(
+                getOnEnterFunc(store.getState),
+                getOnChangeFunc(store.getState)
+            )
         }, async (error, redirectLocation, renderProps) => {
 
             if (redirectLocation) { // Если необходимо сделать redirect

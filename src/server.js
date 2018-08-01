@@ -45,8 +45,8 @@ app.use('/public', express.static('public'))
  * 5) Auth is made through a cookie named "access_token"
  */
 const generateStaticPage = createStaticGenerator({
-    template: getTemplate,
-    route: getRootRoute,
+    getTemplate,
+    getRootRoute,
     jwtSecret: secretKey,
     reducers,
 })

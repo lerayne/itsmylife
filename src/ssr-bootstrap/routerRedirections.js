@@ -12,13 +12,13 @@ import url from 'url'
  * @param prevLocation: Object (URL)
  * @returns String URL
  */
-function getRedirectUrl(pathname, prevLocation = false){
+function getRedirectUrl(pathname, prevLocation = false) {
     const urlObject = {
         pathname: pathname,
         query: {}
     }
 
-    if (prevLocation){
+    if (prevLocation) {
         urlObject.query.next = prevLocation.pathname + prevLocation.search
     }
 
@@ -26,74 +26,86 @@ function getRedirectUrl(pathname, prevLocation = false){
 }
 
 /**
- * Check access to route container and redirect if not allowed
- * Iterates over all components looking for "loginRequired" or "anonymousRequired" static props.
- * redirects to "/login" or "/" if founds
- *
- * @param globalState
- * @param nextRouterState
- * @param redirect
- * @returns {boolean}
+ * @param isLoggedInFromState: Function
+ * @param loginPagePath: String
+ * @param rootPath: String
+ * @returns {{getOnEnterFunc: function(getState): Function, getOnChangeFunc: function(getState): Function}}
  */
-function redirectionsCheck(globalState, nextRouterState, redirect){
+export function createRouterRedirectFuncs(isLoggedInFromState, loginPagePath, rootPath){
+    /**
+     * Check access to route container and redirect if not allowed
+     * Iterates over all components looking for "loginRequired" or "anonymousRequired" static props.
+     * redirects to "/login" or "/" if founds
+     *
+     * @param getState: Function
+     * @param nextRouterState: Object
+     * @param redirect: Function
+     * @returns {boolean}
+     */
+    function redirectionCheck(getState, nextRouterState, redirect) {
 
-    let redirected = false
+        const {routes, location} = nextRouterState
+        // todo: спросиить и подумать об использовании store.getState и передаче результата вместо самой функции
+        // насколько имеет смысл вообще не передавать store в функции, а делать как в redux-thunk:
+        // передавать только getState и dispatch
+        const userLoggedIn = isLoggedInFromState(getState())
+        let redirected = false
 
-    const {routes, location} = nextRouterState
-    const userId = (globalState.user && globalState.user.id) ? globalState.user.id : -1
+        routes.forEach(route => {
+            const component = route.component.WrappedComponent || route.component
 
-    routes.forEach(route => {
-        const component = route.component.WrappedComponent || route.component
+            if (component.loginRequired && !userLoggedIn) {
+                redirected = true
+                redirect(getRedirectUrl(loginPagePath, location))
+            }
 
-        if (component.loginRequired && userId === -1) {
-            redirected = true
-            redirect(getRedirectUrl('/login', location))
-        }
+            if (component.anonymousRequired && userLoggedIn) {
+                redirected = true
+                // todo - подумать о том что случится, если будет переход на страницу "login"
+                // не при помощи набора в адрессной строке (тогда будет простой редирект), а
+                // при помощи инструментов router'а - видимо нужно перенаправить юзера откуда
+                // пришел
+                redirect(getRedirectUrl(rootPath))
+            }
+        })
 
-        if (component.anonymousRequired && userId !== -1) {
-            redirected = true
-            // todo - подумать о том что случится, если будет переход на страницу "login"
-            // не при помощи набора в адрессной строке (тогда будет простой редирект), а
-            // при помощи инструментов router'а - видимо нужно перенаправить юзера откуда
-            // пришел
-            redirect(getRedirectUrl('/'))
-        }
-    })
-
-    // return not used
-    return redirected
-}
-
-/**
- * Handle initial server authorization redirects
- * @param store
- * @returns {Function}
- */
-function getOnEnterFunc(store){
-    return function (nextRouterState, redirect){
-        if (!process.env.BROWSER){
-            redirectionsCheck(store.getState(), nextRouterState, redirect)
-        }
+        // return not used
+        return redirected
     }
-}
 
-/**
- * Handle client authorization redirects
- * @param store
- * @returns {Function}
- */
-function getOnChangeFunc(store){
-    return function(prevRouterState, nextRouterState, redirect){
-        if (process.env.BROWSER){
-            // onChange is called also on url.query change, we want to omit this
-            if (prevRouterState.location.pathname !== nextRouterState.location.pathname){
-                redirectionsCheck(store.getState(), nextRouterState, redirect)
+    /**
+     * Handle initial server authorization redirects
+     *
+     * @param getState
+     * @returns {Function}
+     */
+    function getOnEnterFunc(getState) {
+        return function (nextRouterState, redirect) {
+            if (!process.env.BROWSER) {
+                redirectionCheck(getState, nextRouterState, redirect)
             }
         }
     }
-}
 
-export {
-    getOnEnterFunc,
-    getOnChangeFunc
+    /**
+     * Handle client authorization redirects
+     *
+     * @param getState
+     * @returns {Function}
+     */
+    function getOnChangeFunc(getState) {
+        return function (prevRouterState, nextRouterState, redirect) {
+            if (process.env.BROWSER) {
+                // onChange is called also on url.query change, we want to omit this
+                if (prevRouterState.location.pathname !== nextRouterState.location.pathname) {
+                    redirectionCheck(getState, nextRouterState, redirect)
+                }
+            }
+        }
+    }
+
+    return {
+        getOnEnterFunc,
+        getOnChangeFunc
+    }
 }
