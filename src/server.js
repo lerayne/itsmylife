@@ -7,7 +7,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 
-import {createStaticGenerator, createLoginEP} from './ssr-bootstrap'
+import {createStaticGenerator, createLoginEP} from './ssr-bootstrap/server'
 
 import getTemplate from './server/getTemplate'
 import reducers from './shared/reducers'
@@ -15,16 +15,16 @@ import getRootRoute from './shared/getRootRoute'
 
 import {secretKey, keyExpiresIn, domain} from 'config'
 
-//import {domain} from 'config'
-
 // создаем центральный апп
 const app = express()
 
 // стандартный модуль, для парсинга JSON в запросах
 app.use(bodyParser.json())
+
 // стандартный модуль для парсинга поля body в POST-запросах. extended:false означает что в
 // возвращаемом объекте value может быть только string или array
 app.use(bodyParser.urlencoded({extended:false}))
+
 // стандартный модуль для парсинга cookies
 app.use(cookieParser())
 
