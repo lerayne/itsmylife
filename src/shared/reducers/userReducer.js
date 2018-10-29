@@ -12,7 +12,13 @@ export default function daysReducer (state = initialState, action){
 
     if (payload !== undefined && !payload.error) {
         switch (type) {
+            case "SET_USER":
+                return {
+                    ...state,
+                    ...payload
+                }
 
+            default: return state
         }
     }
 

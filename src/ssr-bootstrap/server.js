@@ -5,3 +5,4 @@
 
 export createStaticGenerator from './createStaticGenerator'
 export createLoginEP from './endpoints/login'
+export createLogoutEP from './endpoints/logout'

@@ -29,12 +29,12 @@ app.get('/*', generateStaticPage)
 **domain:** (required)  
 **reducers:** (required) обычный для redux объект с редюсерами (_не_ то что возвращает функция combineReduces, а то, 
 что она принимает)  
-**loginPagePath:**  
-**rootPath:**  
-**setUserState:**  
-**isLoggedInFromState:**   
+**loginPagePath:** //todo  
+**rootPath:** //todo   
+**setUserState:** //todo   
+**isLoggedInFromState:** //todo   
 **keyExpiresIn:** defaults to 30 days  
-**authCookieName:**
+**authCookieName:** //todo
 
 ## createLoginEP
 Создает эндпоинт для экспресс, ставится на POST адреса логина, например `/login`
@@ -52,4 +52,6 @@ app.post('/login', createLoginEP({
 **keyExpiresIn:** defaults to 30 days  
 **authCookieName:**  
 **loginPagePath:**  
-**rootPath:**  
+**rootPath:** 
+
+## createLogoutEP 

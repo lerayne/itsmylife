@@ -4,6 +4,7 @@
 "use strict"
 
 import url from 'url'
+import isServer from 'detect-node'
 
 /**
  * Creates new URL with previous location in query param "next"
@@ -81,7 +82,8 @@ export function createRouterRedirectFuncs(isLoggedInFromState, loginPagePath, ro
      */
     function getOnEnterFunc(getState) {
         return function (nextRouterState, redirect) {
-            if (!process.env.BROWSER) {
+            if (isServer) {
+                console.log('getOnEnterFunc (SERVER)')
                 redirectionCheck(getState, nextRouterState, redirect)
             }
         }
@@ -95,7 +97,8 @@ export function createRouterRedirectFuncs(isLoggedInFromState, loginPagePath, ro
      */
     function getOnChangeFunc(getState) {
         return function (prevRouterState, nextRouterState, redirect) {
-            if (process.env.BROWSER) {
+            if (!isServer) {
+                console.log('getOnChangeFunc (BROWSER)')
                 // onChange is called also on url.query change, we want to omit this
                 if (prevRouterState.location.pathname !== nextRouterState.location.pathname) {
                     redirectionCheck(getState, nextRouterState, redirect)

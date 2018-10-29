@@ -12,6 +12,7 @@ class MainPage extends Component {
     render() {
         return <div>
             Main Page
+            <a href="/logout">Log out</a>
             {this.props.children}
         </div>
     }

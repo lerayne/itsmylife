@@ -60,7 +60,6 @@ export default function createLoginEP(options){
     }
 
     return async function login(req, res) {
-
         const {payload: currentUser} = await checkUserAuth(req)
 
         if (currentUser) {
@@ -76,6 +75,8 @@ export default function createLoginEP(options){
             } else {
                 //todo: "password_hash" change here too
                 const passwordCorrect = await bcrypt.compare(req.body.password, user.password_hash)
+
+                console.log('passwordCorrect', passwordCorrect)
 
                 if (!passwordCorrect) {
                     // Wrong password

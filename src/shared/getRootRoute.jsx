@@ -11,7 +11,7 @@ import LoginPage from '../shared/containers/LoginPage'
 import MainPage from '../shared/containers/MainPage'
 
 export default function getRootRoute(onEnter, onChange) {
-    return <Route component={ApplicationRoot} path='/' onEnter={onEnter} onChange={onChange}>
+    return <Route component={ApplicationRoot} path='/' {...{onEnter, onChange}}>
         <IndexRoute component={MainPage} />
         <Route path="login" component={LoginPage}/>
     </Route>

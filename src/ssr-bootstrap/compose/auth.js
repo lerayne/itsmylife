@@ -14,9 +14,9 @@ export function createAuthFuncs(domain, authCookieName, jwtSecret, keyExpiresIn)
             if (!req.cookies[authCookieName]) {
                 resolve(false)
             } else {
-                jwt.verify(req.cookies[authCookieName], jwtSecret, (err, decoded) =>
+                jwt.verify(req.cookies[authCookieName], jwtSecret, (err, decoded) => {
                     resolve(err ? false : decoded)
-                )
+                })
             }
         })
     }

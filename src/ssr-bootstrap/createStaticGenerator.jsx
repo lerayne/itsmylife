@@ -12,7 +12,7 @@ import {createRouterRedirectFuncs} from './compose/routerRedirections'
 import {createAuthFuncs} from './compose/auth'
 import configureStore from './redux/configureStore'
 
-export default function createStaticGenerator(options){
+export default function createStaticGenerator(options) {
 
     /* object configuration */
 
@@ -22,16 +22,12 @@ export default function createStaticGenerator(options){
         rootPath: "/",
         keyExpiresIn: "30 days",
 
-        setUserState: function(userCookieObject){
-            return {
-                type: 'SET_USER',
-                payload: userCookieObject
-            }
-        },
+        setUserState: userCookieObject => ({
+            type: 'SET_USER',
+            payload: userCookieObject
+        }),
 
-        isLoggedInFromState: function(state){
-            return state.user.id !== -1
-        }
+        isLoggedInFromState: state => state.user.id !== -1
     }
 
     const requiredOptions = [
@@ -73,7 +69,7 @@ export default function createStaticGenerator(options){
      * @param getState
      * @param reactNode
      */
-    function streamHTML(res, getState, reactNode){
+    function streamHTML(res, getState, reactNode) {
         const [headHTML, tailHTML] = getTemplate('{react-root}', getState()).split('{react-root}')
 
         res.write(headHTML)
@@ -106,7 +102,7 @@ export default function createStaticGenerator(options){
      * Actual handler of express get routing
      *
      * @param req - express request
-     * @param res - espress response
+     * @param res - express response
      */
     return async function generateStaticPage(req, res) {
 
@@ -150,7 +146,7 @@ export default function createStaticGenerator(options){
 
             renderProps.routes.forEach(route => {
                 const component = route.component.WrappedComponent || route.component
-                if (component.initialize){
+                if (component.initialize) {
                     promises.push(component.initialize(store.dispatch, renderProps.location))
                 }
             })
