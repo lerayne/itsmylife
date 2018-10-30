@@ -6,14 +6,22 @@ import bcrypt from 'bcryptjs'
 import url from 'url'
 
 import {createAuthFuncs} from '../compose/auth'
+import {
+    authCookieName,
+    loginPagePath,
+    rootPath,
+    keyExpiresIn
+} from '../constants/defaultOptions'
 
-export default function createLoginEP(options){
+console.log('authCookieName', authCookieName)
+
+export default function createLoginEP(options) {
 
     const defaultOptions = {
-        authCookieName: "access_token",
-        loginPagePath: "/login",
-        rootPath: "/",
-        keyExpiresIn: "30 days"
+        authCookieName,
+        loginPagePath,
+        rootPath,
+        keyExpiresIn
     }
 
     const requiredOptions = [
@@ -33,58 +41,62 @@ export default function createLoginEP(options){
         ...options
     }
 
-    const {
-        domain,
-        authCookieName,
-        jwtSecret,
-        keyExpiresIn,
-        loginPagePath,
-        rootPath,
-        getUser
-    } = options
+    //variable scoping
+    {
+        const {
+            domain,
+            authCookieName,
+            jwtSecret,
+            keyExpiresIn,
+            loginPagePath,
+            rootPath,
+            getUser
+        } = options
 
-    const {checkUserAuth, grantAccess} = createAuthFuncs(
-        domain,
-        authCookieName,
-        jwtSecret,
-        keyExpiresIn
-    )
+        const {checkUserAuth, grantAccess} = createAuthFuncs(
+            domain,
+            authCookieName,
+            jwtSecret,
+            keyExpiresIn
+        )
 
-    function redirectToFailure(req, res) {
-        res.redirect(302, url.format({
-            pathname: loginPagePath, query: {
-                next: req.body.nextUrl,
-                error: 1
-            }
-        }))
-    }
+        const redirectToFailure = function(req, res) {
+            res.redirect(302, url.format({
+                pathname: loginPagePath, query: {
+                    next: req.body.nextUrl,
+                    error: 1
+                }
+            }))
+        }
 
-    return async function login(req, res) {
-        const {payload: currentUser} = await checkUserAuth(req)
+        return async function login(req, res) {
 
-        if (currentUser) {
-            // Already logged in: redirect back
-            res.redirect(302, req.body.nextUrl || '/')
-        } else {
+            const {payload: currentUser} = await checkUserAuth(req)
 
-            const user = await getUser(req.body.email)
-
-            if (!user) {
-                // No such user
-                redirectToFailure(req, res)
+            if (currentUser) {
+                // Already logged in: redirect back
+                res.redirect(302, req.body.nextUrl || '/')
             } else {
-                //todo: "password_hash" change here too
-                const passwordCorrect = await bcrypt.compare(req.body.password, user.password_hash)
 
-                console.log('passwordCorrect', passwordCorrect)
+                const user = await getUser(req.body.email)
 
-                if (!passwordCorrect) {
-                    // Wrong password
+                if (!user) {
+                    // No such user
                     redirectToFailure(req, res)
                 } else {
-                    // User is successfully authed!
-                    await grantAccess(req, res, user)
-                    res.redirect(302, req.body.nextUrl || rootPath)
+                    //todo: "password_hash" change here too
+                    const passwordCorrect = await bcrypt.compare(req.body.password, user.password_hash)
+
+                    console.log('passwordCorrect', passwordCorrect)
+
+                    if (!passwordCorrect) {
+                        // Wrong password
+                        redirectToFailure(req, res)
+                    } else {
+                        // User is successfully authed!
+                        await grantAccess(req, res, user)
+                        res.redirect(302, req.body.nextUrl || rootPath)
+                    }
                 }
             }
         }
